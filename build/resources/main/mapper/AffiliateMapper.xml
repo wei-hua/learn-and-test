@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mybaties.dao.mapper.AffiliateMapper">
+
+  <select id="queryAffiliate" resultType="HashMap">
+    select
+    <foreach item='value' index='key' collection='fields' open='' separator=',' close=''>
+      ${value} as ${key}
+    </foreach>
+    from affiliate
+    <if test="tables != null and tables.size > 0">
+      <foreach item='table' index='index' collection='tables' open='' separator='' close=''>
+        <if test="table == 'affiliate_expand_info'">
+          left join affiliate_expand_info on affiliate.id = affiliate_expand_info.affiliate_id
+        </if>
+      </foreach>
+    </if>
+    where
+    1=1
+    <if test="expressions != null and expressions.size > 0">
+      and
+      <foreach item='expression' index='index' collection='expressions' open='(' separator=' AND '
+        close=')'>
+        <choose>
+          <when test="expression.operation == 'in' || expression.operation == 'not in'">
+            ${expression.key} ${expression.operation} (
+            <foreach collection="expression.value" item="v" separator=",">
+              #{v}
+            </foreach>
+            )
+          </when>
+          <when test="expression.operation == 'between' || expression.operation == 'not between'">
+            ${expression.key} ${expression.operation} #{expression.value[0]} and
+            #{expression.value[1]}
+          </when>
+          <when test="expression.operation == 'like' || expression.operation == 'not like'">
+            ${expression.key} ${expression.operation} "%"#{expression.value}"%"
+          </when>
+          <otherwise>
+            ${expression.key} ${expression.operation} #{expression.value}
+          </otherwise>
+        </choose>
+      </foreach>
+    </if>
+  </select>
+
+  <select id="queryTO" fetchSize="-2147483648" resultType="HashMap">
+    SELECT
+    aff_user_mapping.`aff_id` affiliateId,
+    users.username `to`
+    FROM aff_user_mapping
+    INNER JOIN users
+    ON aff_user_mapping.`user_id` = users.id
+    WHERE (1 = 1)
+    <if test="affIds != null and affIds.size > 0">
+      and aff_user_mapping.aff_id IN
+      <foreach collection="affIds" item="affId" open="(" separator="," close=")">
+        #{affId}
+      </foreach>
+    </if>
+  </select>
+
+</mapper>
